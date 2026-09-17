@@ -1,4 +1,7 @@
-"""
+from curses import version
+
+
+py -3.12 --version"""
 train_model.py
 Train a CNN to classify brain MRI images into 4 categories:
 glioma, meningioma, pituitary, notumor.
