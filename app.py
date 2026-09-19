@@ -1,16 +1,25 @@
 import os
+import sys
 import numpy as np
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
 import tensorflow as tf
 
-# config
+
+def resource_path(filename):
+    # when running as a normal .py file, files are next to this script
+    # when running as a PyInstaller .exe, bundled files are extracted to a temp folder (sys._MEIPASS)
+    if hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, filename)
+    return os.path.join(os.path.abspath("."), filename)
+
+
 IMG_SIZE = 128
-MODEL_PATH = "brain_tumor_model.keras"
-CLASS_NAMES_PATH = "class_names.txt"
-PHOTO_PATH = "developer_photo.jpeg"
-LOGO_PATH = "logo.png"
+MODEL_PATH = resource_path("brain_tumor_model.keras")
+CLASS_NAMES_PATH = resource_path("class_names.txt")
+PHOTO_PATH = resource_path("developer_photo.jpeg")
+LOGO_PATH = resource_path("logo.png")
 
 DEVELOPER_NAME = "Developed by MOHAMED-AMINE EL-QADERY"
 DEVELOPER_TITLE = "Radiology Student at the Higher Institute of\nNursing and Health Techniques Professions\n(ISPITS), Errachidia"
