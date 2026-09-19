@@ -9,7 +9,7 @@ import tensorflow as tf
 IMG_SIZE = 128
 MODEL_PATH = "brain_tumor_model.keras"
 CLASS_NAMES_PATH = "class_names.txt"
-PHOTO_PATH = "developer_photo.jpg"
+PHOTO_PATH = "developer_photo.jpeg"
 LOGO_PATH = "logo.png"
 
 DEVELOPER_NAME = "Developed by MOHAMED-AMINE EL-QADERY"
