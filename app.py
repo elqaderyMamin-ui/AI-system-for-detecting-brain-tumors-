@@ -1,5 +1,15 @@
 import os
 import sys
+
+# When built with --windowed, there is no console, so sys.stdout / sys.stderr
+# are None. Some libraries (TensorFlow included) try to write progress info
+# to them and crash with "'NoneType' object has no attribute 'write'".
+# Redirecting them to a dummy stream avoids that.
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w")
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, "w")
+
 import numpy as np
 import tkinter as tk
 from tkinter import filedialog, messagebox
@@ -24,6 +34,17 @@ LOGO_PATH = resource_path("logo.png")
 DEVELOPER_NAME = "Developed by MOHAMED-AMINE EL-QADERY"
 DEVELOPER_TITLE = "Radiology Student at the Higher Institute of\nNursing and Health Techniques Professions\n(ISPITS), Errachidia"
 
+# short description of each class, used to build the final sentence
+TUMOR_INFO = {
+    "glioma": "a glioma, a tumor that originates from the glial cells of the brain. "
+              "On MRI it often appears as an irregular, infiltrative mass with unclear borders.",
+    "meningioma": "a meningioma, a tumor arising from the meninges (the membranes covering the brain). "
+                  "It typically appears as a well-defined, rounded mass, often attached to the inner skull surface.",
+    "pituitary": "a pituitary tumor, located in the pituitary gland at the base of the brain. "
+                 "It usually appears as a small, well-circumscribed mass near the sella turcica.",
+    "notumor": "no visible tumor. The brain tissue appears within a normal pattern, with no abnormal mass detected.",
+}
+
 # load model once when the app starts, not every time we predict
 model = tf.keras.models.load_model(MODEL_PATH)
 
@@ -37,7 +58,9 @@ def predict_image(img_path):
     img_array = np.array(img) / 255.0
     img_array = np.expand_dims(img_array, axis=(0, -1))
 
-    preds = model.predict(img_array)
+    # verbose=0 avoids TensorFlow trying to print a progress bar,
+    # which is what triggers the stdout crash in a windowed .exe
+    preds = model.predict(img_array, verbose=0)
     idx = np.argmax(preds[0])
     label = class_names[idx]
     confidence = preds[0][idx] * 100
@@ -45,11 +68,24 @@ def predict_image(img_path):
     return label, confidence, preds[0]
 
 
+def build_report(label, confidence):
+    description = TUMOR_INFO.get(label, "an unrecognized pattern.")
+
+    if label == "notumor":
+        conclusion = f"Conclusion: the scan shows {description} ({confidence:.1f}% confidence)."
+    else:
+        conclusion = (
+            f"Conclusion: the scan is most consistent with {description}\n\n"
+            f"The model is {confidence:.1f}% confident in this classification."
+        )
+    return conclusion
+
+
 class DiagnosisApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Brain Tumor MRI Diagnosis")
-        self.root.geometry("700x550")
+        self.root.geometry("750x600")
 
         sidebar = tk.Frame(root, width=200, bg="#1f2937")
         sidebar.pack(side="left", fill="y")
@@ -92,8 +128,17 @@ class DiagnosisApp:
         self.result_label = tk.Label(main_area, text="", font=("Arial", 14, "bold"))
         self.result_label.pack(pady=10)
 
-        self.details_label = tk.Label(main_area, text="", font=("Arial", 10), justify="left")
-        self.details_label.pack(pady=5)
+        self.details_label = tk.Label(
+            main_area, text="", font=("Arial", 10), justify="left",
+            wraplength=480
+        )
+        self.details_label.pack(pady=5, padx=20)
+
+        self.report_label = tk.Label(
+            main_area, text="", font=("Arial", 10, "italic"), justify="left",
+            wraplength=480, fg="#1f2937"
+        )
+        self.report_label.pack(pady=15, padx=20)
 
     def select_image(self):
         file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.jpeg *.png")])
@@ -112,6 +157,8 @@ class DiagnosisApp:
 
             details = "\n".join(f"{name}: {p*100:.1f}%" for name, p in zip(class_names, probs))
             self.details_label.configure(text=details)
+
+            self.report_label.configure(text=build_report(label, confidence))
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
